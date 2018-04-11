@@ -1,24 +1,22 @@
-# README
+rails/rails#31250 broke collection caching in controller actions using HTTP caching.
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+`PostsController#index` passes a relation to `fresh_when` for the purpose of setting the `ETag` header:
 
-Things you may want to cover:
+```ruby
+class PostsController < ApplicationController
+  def index
+    @posts = Post.all
+    fresh_when @posts
+  end
+end
+```
 
-* Ruby version
+The corresponding view (`app/views/posts/index.html.erb`) renders the same relation object as a cached collection:
 
-* System dependencies
+```ruby
+<%= render partial: 'posts/post', collection: @posts, cached: true %>
+```
 
-* Configuration
+When the `posts#index` action is invoked, an `ActiveRecord::ImmutableRelation` error is raised.
 
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+`ActiveRecord::Railties::CollectionCacheAssociationLoading#relation_from_options` checks whether the relation it chooses is loaded before calling `ActiveRecord::Relation::QueryMethods#skip_preloading!`, but that method can raise an `ActiveRecord::ImmutableRelation` error even if the relation isn't loaded (i.e. when `ActiveRecord::Relation::QueryMethods#arel` was previously called).
