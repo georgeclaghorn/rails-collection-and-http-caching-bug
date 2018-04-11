@@ -1,4 +1,4 @@
-rails/rails#31250 broke collection caching in controller actions using HTTP caching.
+[rails/rails#31250](https://github.com/rails/rails/pull/31250) broke collection caching in controller actions using HTTP caching.
 
 `PostsController#index` passes a relation to `fresh_when` for the purpose of setting the `ETag` header:
 
